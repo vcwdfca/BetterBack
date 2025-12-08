@@ -1,5 +1,5 @@
 {
-	"package": "",
+	"package": "com.vcwdfca.bb.mixin",
 	"required": true,
 	"refmap": "${mixin_refmap}",
 	"target": "@env(DEFAULT)",
@@ -7,5 +7,5 @@
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [],
 	"server": [],
-	"client": []
+	"client": ["MixinGuiScreenCanvas"]
 }
