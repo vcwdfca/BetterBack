@@ -7,5 +7,10 @@
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [],
 	"server": [],
-	"client": ["MixinGuiScreenCanvas"]
+	"client": [
+      "betterquesting.api2.client.gui.MixinGuiScreenCanvas",
+      "betterquesting.api2.client.gui.controls.MixinPanelTextField",
+      "betterquesting.client.gui2.MixinGuiQuestLines",
+      "betterquesting.client.gui2.MixinGuiQuestSearch"
+    ]
 }
