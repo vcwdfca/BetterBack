@@ -41,14 +41,14 @@ public abstract class MixinGuiQuestLines extends GuiScreenCanvas implements IPEv
     @Shadow
     protected abstract void openQuestLine(DBEntry<IQuestLine> q);
 
-    @Inject(method = "initPanel()V", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;<init>(Lbetterquesting/api2/client/gui/misc/IGuiRect;ILjava/lang/String;)V", ordinal = 1))
+    @Inject(method = "initPanel", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;<init>(Lbetterquesting/api2/client/gui/misc/IGuiRect;ILjava/lang/String;)V", ordinal = 1))
     private void BeforeInitBtnSearch(CallbackInfo ci) {
         if(betterBack$searchGui == null) {
             this.betterBack$searchGui = betterBack$initSearchPanel();
         }
     }
 
-    @Redirect(method = "initPanel()V", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;setClickAction(Ljava/util/function/Consumer;)Lbetterquesting/api2/client/gui/controls/PanelButton;", ordinal = 1))
+    @Redirect(method = "initPanel", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;setClickAction(Ljava/util/function/Consumer;)Lbetterquesting/api2/client/gui/controls/PanelButton;", ordinal = 1))
     private PanelButton ClickAction(PanelButton instance, Consumer<PanelButton> action) {
         return instance.setClickAction((btn) -> this.mc.displayGuiScreen(this.betterBack$searchGui));
     }

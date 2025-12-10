@@ -17,7 +17,7 @@ public abstract class MixinGuiScreenCanvas extends GuiScreen implements IScene {
     @Unique
     GuiScreenCanvas betterBack$self = (GuiScreenCanvas)(Object)this;
 
-    @Inject(method = "onMouseClick(III)Z", at = @At("TAIL"), cancellable = true)
+    @Inject(method = "onMouseClick", at = @At("TAIL"), cancellable = true)
     private void back(int mx, int my, int click, CallbackInfoReturnable<Boolean> cir, @Local(name = "used") boolean used) {
         if(!used && click == 1) {
             if(betterBack$self.parent != null && betterBack$self.parent instanceof GuiScreenCanvas &&

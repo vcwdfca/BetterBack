@@ -32,7 +32,7 @@ public abstract class MixinPanelTextField<T> implements IGuiPanel {
 
     @Inject(method = "onMouseClick", at = @At(value = "FIELD", target = "Lbetterquesting/api2/client/gui/controls/PanelTextField;canWrap:Z", opcode = Opcodes.GETFIELD))
     private void enableClearing(int mx, int my, int button, CallbackInfoReturnable<Boolean> cir) {
-        if(button == 1/* && watermark.equals("Search...")*/) {
+        if(button == 1 && watermark.equals("Search...")) {
             setText("");
 
             if(callback != null) {
@@ -41,8 +41,8 @@ public abstract class MixinPanelTextField<T> implements IGuiPanel {
         }
     }
 
-    @Inject(method = "onMouseClick", at = @At(value = "FIELD", target = "Lbetterquesting/api2/client/gui/controls/PanelTextField;isFocused:Z", opcode = Opcodes.GETFIELD, ordinal = 1), cancellable = true)
+    @Inject(method = "onMouseClick", at = @At(value = "FIELD", target = "Lbetterquesting/api2/client/gui/controls/PanelTextField;dragging:Z", opcode = Opcodes.PUTFIELD, shift = At.Shift.AFTER), cancellable = true)
     private void disableBack(int mx, int my, int button, CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(false);
+        cir.setReturnValue(true);
     }
 }
