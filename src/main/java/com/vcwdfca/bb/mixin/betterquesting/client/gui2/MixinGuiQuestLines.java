@@ -1,11 +1,9 @@
 package com.vcwdfca.bb.mixin.betterquesting.client.gui2;
 
-import betterquesting.api.client.gui.misc.INeedsRefresh;
 import betterquesting.api.questing.IQuestLine;
 import betterquesting.api2.client.gui.GuiScreenCanvas;
 import betterquesting.api2.client.gui.controls.PanelButton;
 import betterquesting.api2.client.gui.controls.PanelButtonQuest;
-import betterquesting.api2.client.gui.events.IPEventListener;
 import betterquesting.api2.client.gui.panels.lists.CanvasQuestLine;
 import betterquesting.api2.client.gui.resources.colors.GuiColorPulse;
 import betterquesting.api2.client.gui.resources.colors.GuiColorStatic;
@@ -25,9 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-@SuppressWarnings("deprecation")
 @Mixin(value = GuiQuestLines.class, remap = false)
-public abstract class MixinGuiQuestLines extends GuiScreenCanvas implements IPEventListener, INeedsRefresh {
+public abstract class MixinGuiQuestLines extends GuiScreenCanvas {
     @Shadow
     private CanvasQuestLine cvQuest;
 
@@ -42,14 +39,14 @@ public abstract class MixinGuiQuestLines extends GuiScreenCanvas implements IPEv
     protected abstract void openQuestLine(DBEntry<IQuestLine> q);
 
     @Inject(method = "initPanel", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;<init>(Lbetterquesting/api2/client/gui/misc/IGuiRect;ILjava/lang/String;)V", ordinal = 1))
-    private void BeforeInitBtnSearch(CallbackInfo ci) {
+    private void beforeInitBtnSearch(CallbackInfo ci) {
         if(betterBack$searchGui == null) {
             this.betterBack$searchGui = betterBack$initSearchPanel();
         }
     }
 
     @Redirect(method = "initPanel", at = @At(value = "INVOKE", target = "Lbetterquesting/api2/client/gui/controls/PanelButton;setClickAction(Ljava/util/function/Consumer;)Lbetterquesting/api2/client/gui/controls/PanelButton;", ordinal = 1))
-    private PanelButton ClickAction(PanelButton instance, Consumer<PanelButton> action) {
+    private PanelButton clickAction(PanelButton instance, Consumer<PanelButton> action) {
         return instance.setClickAction((btn) -> this.mc.displayGuiScreen(this.betterBack$searchGui));
     }
 

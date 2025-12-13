@@ -14,6 +14,7 @@
 		"betterquesting.api2.client.gui.controls.MixinPanelTextField",
 		"betterquesting.api2.client.gui.panels.lists.MixinCanvasQuestSearch",
 		"betterquesting.client.gui2.MixinGuiQuestLines",
+		"betterquesting.client.gui2.MixinGuiQuestLines_1",
 		"betterquesting.client.gui2.MixinGuiQuestSearch"
 	]
 }
