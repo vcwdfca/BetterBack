@@ -2,7 +2,6 @@ package com.vcwdfca.bb.mixin.betterquesting.api2.client.gui;
 
 import betterquesting.api.properties.NativeProps;
 import betterquesting.api2.client.gui.GuiScreenCanvas;
-import betterquesting.api2.client.gui.IScene;
 import betterquesting.client.gui2.GuiHome;
 import betterquesting.client.gui2.GuiQuestLines;
 import betterquesting.storage.QuestSettings;
@@ -15,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = GuiScreenCanvas.class, remap = false)
-public abstract class MixinGuiScreenCanvas extends GuiScreen implements IScene {
+public abstract class MixinGuiScreenCanvas extends GuiScreen {
     @Unique
     GuiScreenCanvas betterBack$self = (GuiScreenCanvas)(Object)this;
 
