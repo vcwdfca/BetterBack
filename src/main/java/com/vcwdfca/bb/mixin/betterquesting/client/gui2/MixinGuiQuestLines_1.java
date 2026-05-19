@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(targets = "betterquesting.client.gui2.GuiQuestLines$1", remap = false)
-public class MixinGuiQuestLines_1 {
+public abstract class MixinGuiQuestLines_1 {
     @Shadow
     @Final
     boolean val$canEdit;

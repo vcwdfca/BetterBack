@@ -25,7 +25,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Build with Gradle
         run: ./gradlew build
@@ -39,15 +39,21 @@ jobs:
           if [[ "$COMMIT_MESSAGE" =~ ^[[:space:]]*[Uu]pdate[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]* ]]; then
             VERSION="${BASH_REMATCH[1]}"
             echo "✅ Matched 'update $VERSION' format"
-          
+
             IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
             if [ ${#VERSION_PARTS[@]} -eq 3 ] && \
                [[ "${VERSION_PARTS[0]}" =~ ^[0-9]+$ ]] && \
                [[ "${VERSION_PARTS[1]}" =~ ^[0-9]+$ ]] && \
                [[ "${VERSION_PARTS[2]}" =~ ^[0-9]+$ ]]; then
-              echo "✅ Valid semantic version: $VERSION"
-              echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-              echo "should_create=true" >> $GITHUB_OUTPUT
+              TAG="v$VERSION"
+              if git show-ref --tags --quiet "refs/tags/$TAG"; then
+                echo "❌ Tag $TAG already exists"
+                echo "should_create=false" >> $GITHUB_OUTPUT
+              else
+                echo "✅ Valid semantic version: $VERSION"
+                echo "tag=$TAG" >> $GITHUB_OUTPUT
+                echo "should_create=true" >> $GITHUB_OUTPUT
+              fi
             else
               echo "❌ Invalid version format"
               echo "should_create=false" >> $GITHUB_OUTPUT
@@ -79,6 +85,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Release Notes
+        if: steps.version_check.outputs.should_create == 'true'
+        run: |
+          TAG="${{ steps.version_check.outputs.tag }}"
+          PREV_TAG=$(git tag --list "v*" --sort=-v:refname | grep -v "^$TAG$" | head -n 1)
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="$PREV_TAG..HEAD"
+            COMPARE_URL="https://github.com/${{ github.repository }}/compare/$PREV_TAG...$TAG"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $RANGE)
+          else
+            COMPARE_URL="https://github.com/${{ github.repository }}/commits/master"
+            CHANGELOG="- Initial release"
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="- No changes found"
+          fi
+
+          {
+            echo "## $TAG"
+            echo ""
+            echo "### Changes"
+            echo "$CHANGELOG"
+            echo ""
+            echo "### Changelog"
+            echo "$COMPARE_URL"
+          } > release-notes.md
+
       - name: Create Release
         if: steps.version_check.outputs.should_create == 'true'
         uses: softprops/action-gh-release@v2.5.0
@@ -86,9 +121,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.version_check.outputs.tag }}
-          body: |
-            Auto-generated release from commit: ${{ github.event.head_commit.message }}
-            view [changelog](https://github.com/vcwdfca/BetterBack/commits/master)
+          body_path: release-notes.md
           files: |
             build/libs/*.jar
           make_latest: true
