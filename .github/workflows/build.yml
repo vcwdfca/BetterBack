@@ -1,127 +1,62 @@
-name: build.yml
+name: Build mod jar
 
 on:
-  push:
-    branches:
-      - master
+  [workflow_dispatch, push]
 
 permissions:
   contents: write
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Set up JDK
+      uses: actions/setup-java@v5
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+    - uses: gradle/actions/setup-gradle@v6
+      with:
+        gradle-version: 9.6.0
+      name: Set up Gradle
+    - name: Add permission
+      run: chmod +x ./gradlew
+    - name: Set build version
+      run: |
+        previous_tag="$(git describe --tags --abbrev=0 --exclude=dev 2>/dev/null || echo 0.0.0)"
+        previous_tag="${previous_tag#v}"
+        short_hash="$(git rev-parse --short HEAD)"
+        echo "MOD_VERSION=${previous_tag}+${short_hash}" >> "$GITHUB_ENV"
+        echo "Build version: ${previous_tag}+${short_hash}"
+    - name: Execute Gradle build
+      run: ./gradlew build -x spotlessCheck -Pmod_version="${MOD_VERSION}"
+        
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        path: build/libs
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          java-version: '25'
-          distribution: 'temurin'
+    - name: Update dev tag and ensure dev release exists
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git tag -f dev "${GITHUB_SHA}"
+        git push --force origin refs/tags/dev
+        if ! gh release view dev >/dev/null 2>&1; then
+          gh release create dev --title "dev" --notes "Latest development build artifacts"
+        fi
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Build with Gradle
-        run: ./gradlew build
-
-      - name: Strict Check and Extract
-        id: version_check
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          echo "Checking commit message: $COMMIT_MESSAGE"
-          
-          if [[ "$COMMIT_MESSAGE" =~ ^[[:space:]]*[Uu]pdate[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]* ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "✅ Matched 'update $VERSION' format"
-
-            IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
-            if [ ${#VERSION_PARTS[@]} -eq 3 ] && \
-               [[ "${VERSION_PARTS[0]}" =~ ^[0-9]+$ ]] && \
-               [[ "${VERSION_PARTS[1]}" =~ ^[0-9]+$ ]] && \
-               [[ "${VERSION_PARTS[2]}" =~ ^[0-9]+$ ]]; then
-              TAG="v$VERSION"
-              if git show-ref --tags --quiet "refs/tags/$TAG"; then
-                echo "❌ Tag $TAG already exists"
-                echo "should_create=false" >> $GITHUB_OUTPUT
-              else
-                echo "✅ Valid semantic version: $VERSION"
-                echo "tag=$TAG" >> $GITHUB_OUTPUT
-                echo "should_create=true" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "❌ Invalid version format"
-              echo "should_create=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "❌ Commit message does not match 'update x.x.x' pattern"
-            echo "should_create=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Tag
-        if: steps.version_check.outputs.should_create == 'true'
-        run: |
-          TAG="${{ steps.version_check.outputs.tag }}"
-          
-          if git show-ref --tags --quiet "$TAG"; then
-            echo "❌ Tag $TAG already exists!"
-            exit 0
-          fi
-          
-          echo "Creating tag: $TAG"
-          
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          
-          git tag -a "$TAG" -m "Auto-created from commit: ${{ github.event.head_commit.message }}"
-          
-          git push origin "$TAG"
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prepare Release Notes
-        if: steps.version_check.outputs.should_create == 'true'
-        run: |
-          TAG="${{ steps.version_check.outputs.tag }}"
-          PREV_TAG=$(git tag --list "v*" --sort=-v:refname | grep -v "^$TAG$" | head -n 1)
-
-          if [ -n "$PREV_TAG" ]; then
-            RANGE="$PREV_TAG..HEAD"
-            COMPARE_URL="https://github.com/${{ github.repository }}/compare/$PREV_TAG...$TAG"
-            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $RANGE)
-          else
-            COMPARE_URL="https://github.com/${{ github.repository }}/commits/master"
-            CHANGELOG="- Initial release"
-          fi
-
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="- No changes found"
-          fi
-
-          {
-            echo "## $TAG"
-            echo ""
-            echo "### Changes"
-            echo "$CHANGELOG"
-            echo ""
-            echo "### Changelog"
-            echo "$COMPARE_URL"
-          } > release-notes.md
-
-      - name: Create Release
-        if: steps.version_check.outputs.should_create == 'true'
-        uses: softprops/action-gh-release@v2.5.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version_check.outputs.tag }}
-          body_path: release-notes.md
-          files: |
-            build/libs/*.jar
-          make_latest: true
+    - name: Replace dev release assets
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        mapfile -t assets < <(gh release view dev --json assets --jq '.assets[].name')
+        for asset in "${assets[@]}"; do
+          gh release delete-asset dev "$asset" --yes
+        done
+        gh release upload dev build/libs/* --clobber

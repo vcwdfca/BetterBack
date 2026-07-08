@@ -6,12 +6,19 @@
 	"minVersion": "0.8.5",
 	"compatibilityLevel": "JAVA_8",
 	"mixins": [
+		"betterquesting.handlers.MixinConfigHandler",
 		"betterquesting.questing.tasks.MixinTaskAdvancement"
 	],
 	"server": [],
 	"client": [
 		"betterquesting.api2.client.gui.MixinGuiScreenCanvas",
 		"betterquesting.api2.client.gui.controls.MixinPanelTextField",
-		"betterquesting.client.gui2.MixinGuiQuestLines_1"
+		"betterquesting.api2.client.gui.panels.content.MixinPanelLine",
+		"betterquesting.client.gui2.IMixinGuiQuestLines",
+		"betterquesting.client.gui2.MixinGuiQuest",
+		"betterquesting.client.gui2.MixinGuiQuestLines",
+		"betterquesting.client.gui2.MixinGuiQuestLines_1",
+		"betterquesting.client.themes.MixinResourceRegistry",
+		"betterquesting.client.themes.MixinResourceTheme"
 	]
 }

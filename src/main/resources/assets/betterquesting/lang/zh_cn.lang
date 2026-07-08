@@ -1,0 +1,5 @@
+betterquesting.btn.view_dependencies=查看前置
+betterquesting.btn.view_dependants=查看附属
+betterquesting.btn.show_dependency_arrows=显示依赖箭头
+betterquesting.title.completion=完成度: %d/%d (%s%%)
+betterquesting.title.completion_total=总计: %d/%d (%s%%)
