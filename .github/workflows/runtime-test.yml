@@ -46,7 +46,7 @@ jobs:
       run: ./gradlew build -x spotlessCheck -Pmod_version="${MOD_VERSION}"
 
     - name: Install client runtime dependencies
-      run: sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xvfb
+      run: sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xvfb x11-xserver-utils
 
     - name: Prepare client runtime directory
       run: mkdir -p run/client/mods
@@ -68,7 +68,14 @@ jobs:
         EOF
 
     - name: Run client runtime test
-      run: xvfb-run -a timeout 10m ./gradlew runClient --no-daemon -Pmod_version="${MOD_VERSION}"
+      run: |
+        set -euo pipefail
+
+        xvfb-run -a bash -c '
+          set -euo pipefail
+          xrandr -q
+          timeout 10m ./gradlew runClient --no-daemon -Pmod_version="${MOD_VERSION}"
+        '
 
     - name: Run server runtime test
       run: |
@@ -123,8 +130,8 @@ jobs:
         name: runtime-test-logs
         if-no-files-found: ignore
         path: |
-          run/client/logs
-          run/client/crash-reports
+          run/logs
+          run/crash-reports
           run/server/logs
           run/server/crash-reports
           run/server/runtime-test-server.log
