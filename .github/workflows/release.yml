@@ -39,24 +39,7 @@ jobs:
           echo "Release version: ${RELEASE_VERSION}"
       - name: Execute Gradle build
         run: ./gradlew build -x spotlessCheck -Pmod_version="${RELEASE_VERSION}"
-      - name: Build JitPack Maven repository
-        run: |
-          JITPACK_GROUP="com.github.${GITHUB_REPOSITORY_OWNER}"
-          JITPACK_ARTIFACT_ID="${GITHUB_REPOSITORY#*/}"
-          ./gradlew --build-cache --info --stacktrace \
-            -Ppublish_to_jitpack=true \
-            -Pjitpack_group="${JITPACK_GROUP}" \
-            -Pjitpack_artifact_id="${JITPACK_ARTIFACT_ID}" \
-            -Pjitpack_version="${RELEASE_TAG}" \
-            -Pmod_version="${RELEASE_VERSION}" \
-            -Pgenerate_sources_jar=true \
-            -Pgenerate_javadocs_jar=true \
-            clean publishMavenJavaPublicationToJitpackRepository -x test -x spotlessCheck
-      - name: Package JitPack Maven repository
-        run: |
-          cd build/jitpack-repository
-          zip -r "../jitpack-repository-${RELEASE_TAG}.zip" .
       - name: Create GitHub release
-        run: gh release create "$RELEASE_TAG" build/libs/* "build/jitpack-repository-${RELEASE_TAG}.zip" --title "$RELEASE_TAG" --generate-notes
+        run: gh release create "$RELEASE_TAG" build/libs/* --title "$RELEASE_TAG" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
