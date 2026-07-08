@@ -49,7 +49,7 @@ jobs:
       run: sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xvfb x11-xserver-utils
 
     - name: Prepare client runtime directory
-      run: mkdir -p run/client/mods
+      run: mkdir -p run/mods
 
     - name: Download client runtime test mod
       uses: robinraju/release-downloader@v1.11
@@ -57,12 +57,21 @@ jobs:
         repository: headlesshq/mc-runtime-test
         tag: "4.4.0"
         fileName: "mc-runtime-test-1.12.2-*-lexforge-release.jar"
-        out-file-path: run/client/mods
+        out-file-path: run/mods
+
+    - name: Verify client runtime test mod
+      run: |
+        set -euo pipefail
+        ls -la run/mods
+        test -n "$(find run/mods -maxdepth 1 -type f -name 'mc-runtime-test-*.jar' -print -quit)" || {
+          echo "Runtime test mod jar missing in run/mods."
+          exit 1
+        }
 
     - name: Configure client runtime
       run: |
-        mkdir -p run/client
-        cat <<EOF >> run/client/options.txt
+        mkdir -p run
+        cat <<EOF >> run/options.txt
         onboardAccessibility:false
         pauseOnLostFocus:false
         EOF
