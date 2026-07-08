@@ -86,12 +86,43 @@ jobs:
           timeout 10m ./gradlew runClient --no-daemon -Pmod_version="${MOD_VERSION}"
         '
 
+    - name: Collect client runtime logs
+      if: always()
+      run: |
+        set -euo pipefail
+
+        mkdir -p run/client
+        if [ -d run/logs ]; then
+          mkdir -p run/client/logs
+          cp -a run/logs/. run/client/logs/
+        fi
+        if [ -d run/crash-reports ]; then
+          mkdir -p run/client/crash-reports
+          cp -a run/crash-reports/. run/client/crash-reports/
+        fi
+
     - name: Run server runtime test
       run: |
         set -euo pipefail
 
         mkdir -p run/server
-        echo "eula=true" > run/server/eula.txt
+        rm -f run/mods/mc-runtime-test-*.jar
+        rm -rf run/logs run/crash-reports
+        echo "eula=true" > run/eula.txt
+        cat <<EOF > run/server.properties
+        online-mode=false
+        EOF
+
+        collect_server_logs() {
+          if [ -d run/logs ]; then
+            mkdir -p run/server/logs
+            cp -a run/logs/. run/server/logs/
+          fi
+          if [ -d run/crash-reports ]; then
+            mkdir -p run/server/crash-reports
+            cp -a run/crash-reports/. run/server/crash-reports/
+          fi
+        }
 
         setsid ./gradlew runServer --no-daemon -Pmod_version="${MOD_VERSION}" > run/server/runtime-test-server.log 2>&1 &
         server_pid=$!
@@ -108,18 +139,21 @@ jobs:
             wait "${server_pid}" || exit_code=$?
             echo "Server exited before startup with code ${exit_code:-0}."
             tail -n 200 run/server/runtime-test-server.log || true
+            collect_server_logs
             exit 1
           fi
 
-          if [ -d run/server/crash-reports ] && find run/server/crash-reports -maxdepth 1 -type f -name "*.txt" | grep -q .; then
+          if [ -d run/crash-reports ] && find run/crash-reports -maxdepth 1 -type f -name "*.txt" | grep -q .; then
             echo "Server generated a crash report."
-            find run/server/crash-reports -maxdepth 1 -type f -name "*.txt" -print
+            find run/crash-reports -maxdepth 1 -type f -name "*.txt" -print
             tail -n 200 run/server/runtime-test-server.log || true
+            collect_server_logs
             exit 1
           fi
 
           if grep -E 'Done \(|For help, type "help"' run/server/runtime-test-server.log >/dev/null 2>&1; then
             echo "Server startup detected."
+            collect_server_logs
             cleanup
             trap - EXIT
             exit 0
@@ -130,6 +164,7 @@ jobs:
 
         echo "Server did not finish startup within 10 minutes."
         tail -n 200 run/server/runtime-test-server.log || true
+        collect_server_logs
         exit 1
 
     - name: Upload runtime logs
@@ -139,8 +174,10 @@ jobs:
         name: runtime-test-logs
         if-no-files-found: ignore
         path: |
-          run/logs
-          run/crash-reports
+          run/client/logs
+          run/client/crash-reports
           run/server/logs
           run/server/crash-reports
           run/server/runtime-test-server.log
+          run/logs
+          run/crash-reports
