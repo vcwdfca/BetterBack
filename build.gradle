@@ -15,6 +15,7 @@ plugins {
     id 'com.modrinth.minotaur' version '2.+' apply false
     id 'org.jetbrains.changelog' version '2.5.0'
     id 'com.gradleup.shadow' version '9.4.+'
+    id 'com.diffplug.spotless' version '8.4.0'
 }
 
 apply from: 'gradle/scripts/helpers.gradle'
